@@ -1,0 +1,62 @@
+/* SetCategory.css */
+
+.set-category-container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.set-category-container h2,
+.set-category-container h3 {
+  text-align: center;
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+.set-category-container ul {
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 2rem;
+}
+
+.set-category-container li {
+  padding: 0.5rem;
+  background-color: #ecf0f1;
+  margin-bottom: 0.5rem;
+  border-radius: 6px;
+  color: #34495e;
+  text-align: center;
+  font-weight: 500;
+}
+
+.set-category-container input[type="text"],
+.set-category-container select {
+  width: 100%;
+  padding: 0.6rem;
+  margin-bottom: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  background-color: #f9f9f9;
+}
+
+.set-category-container button {
+  width: 100%;
+  padding: 0.6rem;
+  margin-bottom: 1.5rem;
+  background-color: #4cafaa;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.set-category-container button:hover {
+  background-color: #4cafaa;
+}
