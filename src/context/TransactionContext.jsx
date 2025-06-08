@@ -21,8 +21,11 @@ export function TransactionProvider({ children }) {
     };
 
     const deleteTransaction = (tra) => {
-        setTransactions(prev => prev.filter(t => t.id !== tra.id));
-    };
+        if (confirm("Are you sure you want to delete this transaction?")) {
+            setTransactions(prev => prev.filter(t => t.id !== tra.id));
+        }
+
+    }
 
     const editTransaction = (tra) => {
         setTransactions((prev) =>
@@ -38,7 +41,7 @@ export function TransactionProvider({ children }) {
 
 
     return (
-        <Transactions.Provider value={{ transactions, addTransaction, deleteTransaction,editTransaction,balance }}>
+        <Transactions.Provider value={{ transactions, addTransaction, deleteTransaction, editTransaction, balance }}>
             {children}
         </Transactions.Provider>
     )

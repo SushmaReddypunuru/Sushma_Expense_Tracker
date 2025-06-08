@@ -18,7 +18,6 @@ export function CategoriesProvider({ children }) {
       AddToLs("Categories", defaultCategories);
       return defaultCategories;
     }} )
-    if(!categories){setCategories( ["Salary","Food","Entertainment","utilities"])}
     useEffect(() => { AddToLs("Categories", categories) }, [categories])
 
     const addcategory = (cat) => {
@@ -33,7 +32,8 @@ export function CategoriesProvider({ children }) {
         if (!categories.includes(cat)) {
             return alert("Category does not exist");
         }
-        setCategories(prev => prev.filter(c => c !== cat));
+        if(confirm("Are you sure to delete category?")){
+        setCategories(prev => prev.filter(c => c !== cat));}
     };
 
 
