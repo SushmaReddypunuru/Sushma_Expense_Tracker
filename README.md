@@ -19,30 +19,31 @@ This is a simple **Expense Tracker** built using React. It allows users to add, 
 
 ## 🗂 Folder Structure
 
+```text
 src/
-├── compon css/
-│ ├── Categorise.css
-│ ├── Home.css
-│ ├── TransForm.css
-│ └── TransHis.css
+├── css/
+│   ├── Categorise.css
+│   ├── Home.css
+│   ├── TransForm.css
+│   └── TransHis.css
 │
 ├── components/
-│ ├── Dashboard.jsx
-│ ├── Home.jsx
-│ ├── SetCategory.jsx
-│ ├── TransactionForm.jsx
-│ └── TransactionHistory.jsx
+│   ├── Dashboard.jsx
+│   ├── Home.jsx
+│   ├── SetCategory.jsx
+│   ├── TransactionForm.jsx
+│   └── TransactionHistory.jsx
 │
 ├── context/
-│ ├── CategoryContext.jsx
-│ └── TransactionContext.jsx
+│   ├── CategoryContext.jsx
+│   └── TransactionContext.jsx
 │
 ├── App.jsx
 ├── main.jsx
 ├── localstorage.js
 └── index.html
 
-
+```
 
 ---
 
