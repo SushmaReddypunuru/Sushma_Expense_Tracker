@@ -61,7 +61,7 @@ src/
 
 ```bash
 # Clone the repo
-git clone <your-repo-url>
+git clone <repo-url>
 cd proj2
 
 # Install dependencies
