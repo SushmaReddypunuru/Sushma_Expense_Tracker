@@ -1,5 +1,7 @@
 # 💸 Expense Tracker (React)
 
+**Live Demo**: [sushma-expense-tracker.vercel.app](https://sushma-expense-tracker.vercel.app/)
+
 This is a simple **Expense Tracker** built using React. It allows users to add, edit, delete, and categorize transactions like income and expenses, with persistent storage using LocalStorage.
 
 ---
