@@ -4,7 +4,7 @@ import React, { createContext, useState, useContext, useEffect } from "react";
 const AuthContext = createContext();
 
 // Dynamic API URL depending on build environment
-export const API_BASE = "http://localhost:5000/api";
+export const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000/api";
 
 // Custom hook to consume the authentication context
 export function useAuth() {
