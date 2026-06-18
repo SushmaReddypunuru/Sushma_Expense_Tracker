@@ -8,18 +8,27 @@ from helpers import hash_password, login_required, get_filtered_transactions_sql
 app = Flask(__name__)
 app.secret_key = config.SECRET_KEY
 
-# Configure session cookies to support cross-site local requests (React at 5173, Flask at 5000)
+import os
+
+# Configure session cookies based on environment (cross-site cookies require SameSite=None and Secure=True in prod)
+IS_PROD = os.environ.get("ENV") == "production"
+
 app.config.update(
-    SESSION_COOKIE_SAMESITE='Lax',
-    SESSION_COOKIE_SECURE=False, # Set to True in HTTPS production environments
+    SESSION_COOKIE_SAMESITE='None' if IS_PROD else 'Lax',
+    SESSION_COOKIE_SECURE=IS_PROD,
     SESSION_COOKIE_HTTPONLY=True
 )
 
 # Enable CORS allowing React client with session credentials (cookies)
+CLIENT_ORIGIN = os.environ.get("CLIENT_ORIGIN", "http://localhost:5173")
+cors_origins = [CLIENT_ORIGIN]
+if not IS_PROD:
+    cors_origins.append("http://127.0.0.1:5173")
+
 CORS(
     app,
     supports_credentials=True,
-    resources={r"/api/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173"]}}
+    resources={r"/api/*": {"origins": cors_origins}}
 )
 
 # Initialize MySQL tables on startup
