@@ -3,17 +3,26 @@ import { useTransactions } from '../context/TransactionContext';
 import { useCategories } from '../context/CategoryContext';
 
 function TransactionForm() {
-  const { addTransaction, balance } = useTransactions();
+  const { addTransaction, balance, transactions } = useTransactions();
   const { categories } = useCategories();
+
+  // Helper to get today's date string YYYY-MM-DD in local time
+  const getTodayDateString = () => {
+    const today = new Date();
+    const offset = today.getTimezoneOffset();
+    const localToday = new Date(today.getTime() - offset * 60 * 1000);
+    return localToday.toISOString().slice(0, 10);
+  };
 
   // Local form inputs state
   const [data, setData] = useState({
     amount: '',
-    date: '',
+    date: getTodayDateString(),
     category: '',
     description: '',
     type: 'expense',
     recurring: false,
+    recurrence_interval: 'monthly',
     tags: '',
   });
 
@@ -57,6 +66,44 @@ function TransactionForm() {
     });
   };
 
+  // Compute real-time category budget warning
+  const getBudgetWarning = () => {
+    if (data.type !== 'expense' || !data.category || !data.amount || !data.date) return null;
+    
+    const amt = parseFloat(data.amount);
+    if (isNaN(amt) || amt <= 0) return null;
+
+    const catObj = categories.find(c => c.name === data.category);
+    if (!catObj || catObj.budget <= 0) return null;
+
+    // Determine target month and year of the transaction
+    const targetDate = new Date(data.date);
+    const targetYear = targetDate.getFullYear();
+    const targetMonth = targetDate.getMonth();
+
+    // Sum active month expenses for this category
+    const currentMonthSpend = transactions
+      .filter((t) => {
+        if (t.type !== 'expense' || t.category !== data.category || !t.date) return False;
+        const d = new Date(t.date);
+        return d.getFullYear() === targetYear && d.getMonth() === targetMonth;
+      })
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const totalExpectedSpend = currentMonthSpend + amt;
+    if (totalExpectedSpend > catObj.budget) {
+      return {
+        limit: catObj.budget,
+        current: currentMonthSpend,
+        remaining: Math.max(0, catObj.budget - currentMonthSpend),
+        excess: totalExpectedSpend - catObj.budget
+      };
+    }
+    return null;
+  };
+
+  const budgetWarning = getBudgetWarning();
+
   // Submit handler
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -94,11 +141,12 @@ function TransactionForm() {
       // Reset form fields
       setData({
         amount: '',
-        date: '',
+        date: getTodayDateString(),
         category: '',
         description: '',
         type: 'expense',
         recurring: false,
+        recurrence_interval: 'monthly',
         tags: '',
       });
     } else {
@@ -173,8 +221,8 @@ function TransactionForm() {
           {/* Amount */}
           <div className="space-y-1">
             <label className="text-xs font-bold text-brand-text-gray dark:text-dark-text-gray">Amount (₹)</label>
-            <div className="relative rounded-lg border border-gray-300 dark:border-dark-border overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary">
-              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 text-sm bg-gray-50 dark:bg-[#151d2a] border-r border-gray-300 dark:border-dark-border px-2">₹</span>
+            <div className="relative rounded-lg border border-gray-300 dark:border-dark-border overflow-hidden focus-within:ring-4 focus-within:ring-primary/10 focus-within:border-primary">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 text-sm bg-gray-55 dark:bg-[#151d2a] border-r border-gray-300 dark:border-dark-border px-2">₹</span>
               <input 
                 type="number" 
                 name="amount" 
@@ -196,7 +244,8 @@ function TransactionForm() {
               name="date" 
               value={data.date} 
               onChange={handleChange}
-              className="input-field"
+              onClick={(e) => e.target.showPicker()}
+              className="input-field cursor-pointer"
             />
           </div>
 
@@ -214,6 +263,16 @@ function TransactionForm() {
                 <option key={c.name} value={c.name}>{c.name}</option>
               ))}
             </select>
+
+            {/* Real-time Budget Warning Notice */}
+            {budgetWarning && (
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-lg text-amber-700 dark:text-amber-400 text-xs mt-2 animate-fade-in font-medium">
+                ⚠️ <strong>Budget Limit Exceeded:</strong> Setting this expense will exceed the monthly category budget limit of ₹{budgetWarning.limit.toFixed(2)} by <strong>₹{budgetWarning.excess.toFixed(2)}</strong>.
+                <div className="text-[10px] text-amber-600 dark:text-amber-500/80 mt-1">
+                  Current month spending: ₹{budgetWarning.current.toFixed(2)} | Remaining: ₹{budgetWarning.remaining.toFixed(2)}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Description */}
@@ -242,20 +301,38 @@ function TransactionForm() {
             />
           </div>
 
-          {/* Recurring Checkbox Toggle */}
-          <div className="flex items-center justify-between py-2 border-t border-brand-border dark:border-dark-border">
-            <span className="text-xs font-bold text-brand-text-gray dark:text-dark-text-gray">Recurring Item</span>
-            
-            <label className="relative inline-flex items-center cursor-pointer select-none">
-              <input 
-                type="checkbox" 
-                name="recurring" 
-                checked={data.recurring} 
-                onChange={handleChange}
-                className="sr-only peer"
-              />
-              <div className="w-9 h-5 bg-gray-250 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary dark:peer-checked:bg-dark-primary"></div>
-            </label>
+          {/* Recurring Checkbox Toggle & Interval Dropdown */}
+          <div className="space-y-3 py-2 border-t border-brand-border dark:border-dark-border">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-brand-text-gray dark:text-dark-text-gray">Recurring Item</span>
+              
+              <label className="relative inline-flex items-center cursor-pointer select-none">
+                <input 
+                  type="checkbox" 
+                  name="recurring" 
+                  checked={data.recurring} 
+                  onChange={handleChange}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-gray-250 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary dark:peer-checked:bg-dark-primary"></div>
+              </label>
+            </div>
+
+            {data.recurring && (
+              <div className="space-y-1 animate-fade-in">
+                <label className="text-xs font-bold text-brand-text-gray dark:text-dark-text-gray">Recurrence Interval</label>
+                <select 
+                  name="recurrence_interval" 
+                  value={data.recurrence_interval} 
+                  onChange={handleChange}
+                  className="input-field cursor-pointer text-xs"
+                >
+                  <option value="monthly">Monthly</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="daily">Daily</option>
+                </select>
+              </div>
+            )}
           </div>
 
           {/* Submit */}

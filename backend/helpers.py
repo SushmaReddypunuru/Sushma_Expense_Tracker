@@ -37,7 +37,7 @@ def get_filtered_transactions_sql(user_id, search=None, tx_type=None, category=N
   Constructs and executes a raw SQL query to retrieve filtered and sorted transactions for a user.
   Binds parameters safely to prevent SQL injection.
   """
-  query = "SELECT id, amount, DATE_FORMAT(date, '%%Y-%%m-%%d') as date, category, description, type, recurring, tags FROM transactions WHERE user_id = %s"
+  query = "SELECT id, amount, DATE_FORMAT(date, '%%Y-%%m-%%d') as date, category, description, type, recurring, recurrence_interval, parent_recurring_id, tags FROM transactions WHERE user_id = %s"
   params = [user_id]
   
   # 1. Filter by keyword search (matching description, tags, or category name)
@@ -88,5 +88,83 @@ def get_filtered_transactions_sql(user_id, search=None, tx_type=None, category=N
         t['amount'] = float(t['amount'])
         t['recurring'] = bool(t['recurring'])
       return transactions
+  finally:
+    conn.close()
+
+def add_month(d):
+  """
+  Safely shifts a date d (datetime.date) forward by exactly 1 calendar month,
+  correctly handling year transitions and different month end days.
+  """
+  import datetime
+  month = d.month
+  year = d.year + (month // 12)
+  month = (month % 12) + 1
+  day = min(d.day, [31,
+      29 if (year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)) else 28,
+      31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1])
+  return datetime.date(year, month, day)
+
+def process_recurring_transactions(user_id):
+  """
+  Checks for recurring transactions and auto-generates child occurrences
+  up to the current calendar date. Safe against double generation.
+  """
+  import datetime
+  from db import get_db_connection
+  
+  conn = get_db_connection()
+  try:
+    with conn.cursor() as cursor:
+      # Get all active parent recurring transactions for the user
+      cursor.execute(
+          "SELECT id, amount, date, category, description, type, recurrence_interval, tags FROM transactions WHERE user_id = %s AND recurring = True AND parent_recurring_id IS NULL",
+          (user_id,)
+      )
+      parents = cursor.fetchall()
+      today = datetime.date.today()
+      
+      for p in parents:
+        interval = p['recurrence_interval']
+        if not interval or interval not in ['daily', 'weekly', 'monthly']:
+          continue
+          
+        parent_id = p['id']
+        
+        # Find the latest occurrence date (either parent itself or the latest generated child)
+        cursor.execute(
+            "SELECT MAX(date) as last_date FROM transactions WHERE parent_recurring_id = %s OR id = %s",
+            (parent_id, parent_id)
+        )
+        row = cursor.fetchone()
+        last_date = row['last_date']
+        
+        # Convert string to date if returned as string
+        if isinstance(last_date, str):
+          last_date = datetime.datetime.strptime(last_date, "%Y-%m-%d").date()
+          
+        # Loop and generate occurrences up to today
+        current = last_date
+        while True:
+          if interval == 'daily':
+            next_date = current + datetime.timedelta(days=1)
+          elif interval == 'weekly':
+            next_date = current + datetime.timedelta(days=7)
+          elif interval == 'monthly':
+            next_date = add_month(current)
+          else:
+            break
+            
+          if next_date > today:
+            break
+            
+          # Insert child transaction linked to the recurring parent
+          cursor.execute(
+              "INSERT INTO transactions (user_id, amount, date, category, description, type, recurring, recurrence_interval, parent_recurring_id, tags) VALUES (%s, %s, %s, %s, %s, %s, False, %s, %s, %s)",
+              (user_id, p['amount'], next_date, p['category'], p['description'], p['type'], interval, parent_id, p['tags'])
+          )
+          current = next_date
+  except Exception as e:
+    print(f"Error processing recurring transactions for user {user_id}: {e}")
   finally:
     conn.close()

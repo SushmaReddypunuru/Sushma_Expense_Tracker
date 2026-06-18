@@ -61,8 +61,8 @@ function AppContent() {
       </main>
       
       {/* Dark/Light Footer */}
-      <footer className="bg-white dark:bg-dark-card text-brand-text-gray dark:text-dark-text-gray text-center py-6 border-t border-brand-border dark:border-dark-border mt-auto transition-colors duration-200">
-        <p className="text-sm">© 2026 The Expense Tracker. All Rights Reserved.</p>
+      <footer className="bg-white dark:bg-dark-card text-brand-text-gray dark:text-dark-text-gray text-center py-5 border-t border-brand-border dark:border-dark-border mt-auto transition-colors duration-200">
+        <p className="text-xs font-semibold tracking-wide">Expense Tracker | Smart Personal Finance</p>
       </footer>
     </div>
   );

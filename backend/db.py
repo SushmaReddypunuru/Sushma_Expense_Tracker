@@ -65,6 +65,20 @@ def init_db():
       except Exception as migration_error:
         print(f"Migration check error: {migration_error}")
 
+      # Migration: Check if recurrence columns exist in transactions, and add them if not
+      try:
+        cursor.execute("SHOW COLUMNS FROM transactions LIKE 'recurrence_interval'")
+        if not cursor.fetchone():
+          cursor.execute("ALTER TABLE transactions ADD COLUMN recurrence_interval VARCHAR(20) NULL")
+          print("Migrated transactions table: added 'recurrence_interval' column.")
+        
+        cursor.execute("SHOW COLUMNS FROM transactions LIKE 'parent_recurring_id'")
+        if not cursor.fetchone():
+          cursor.execute("ALTER TABLE transactions ADD COLUMN parent_recurring_id INT NULL, ADD FOREIGN KEY (parent_recurring_id) REFERENCES transactions(id) ON DELETE SET NULL")
+          print("Migrated transactions table: added 'parent_recurring_id' column.")
+      except Exception as migration_error:
+        print(f"Migration check error for transactions: {migration_error}")
+
       print("Database tables verified/created successfully.")
   except Exception as e:
     print(f"Error initializing MySQL Database: {e}")

@@ -4,12 +4,40 @@ import { useCategories } from '../context/CategoryContext';
 import { usetheme } from '../context/ThemeContext';
 import { PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer } from 'recharts';
 
+// Simple, small, uniform tooltip component
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white dark:bg-dark-card border border-brand-border dark:border-dark-border rounded-lg p-2 shadow-md text-[10px] font-semibold text-brand-text dark:text-white max-w-xs animate-fade-in">
+        {label && <div className="font-bold border-b border-brand-border dark:border-dark-border pb-1 mb-1 text-brand-text dark:text-white">{label}</div>}
+        <div className="space-y-1">
+          {payload.map((item, idx) => (
+            <div key={idx} className="flex justify-between items-center gap-3">
+              <span className="text-brand-text-gray dark:text-dark-text-gray capitalize">{item.name || item.dataKey}:</span>
+              <span className="font-bold text-purple-600 dark:text-purple-400">₹{parseFloat(item.value).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+const PRESETS = [
+  { label: 'This Week', value: 'week' },
+  { label: 'This Month', value: 'month' },
+  { label: 'This Year', value: 'year' },
+  { label: 'Prev Year', value: 'prev_year' },
+  { label: 'Custom', value: 'custom' },
+];
+
 function Dashboard() {
-  const { transactions, balance } = useTransactions();
+  const { transactions } = useTransactions();
   const { categories } = useCategories();
   const { theme } = usetheme();
 
-  // Date range selectors (default to current calendar month)
+  // Unified Date Range Selector
   const [startDate, setStartDate] = useState(() => {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
@@ -18,8 +46,53 @@ function Dashboard() {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10);
   });
+  const [activePreset, setActivePreset] = useState('month');
 
-  // Calculate stats within the chosen date range
+  // Date Math Helper
+  const getPresetDates = (preset) => {
+    const today = new Date();
+    let start = '';
+    let end = '';
+    
+    if (preset === 'week') {
+      const day = today.getDay();
+      const diff = today.getDate() - day + (day === 0 ? -6 : 1); // Monday
+      const monday = new Date(today.getFullYear(), today.getMonth(), diff);
+      const sunday = new Date(today.getFullYear(), today.getMonth(), diff + 6);
+      start = monday.toISOString().slice(0, 10);
+      end = sunday.toISOString().slice(0, 10);
+    } else if (preset === 'month') {
+      start = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
+      end = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10);
+    } else if (preset === 'year') {
+      start = new Date(today.getFullYear(), 0, 1).toISOString().slice(0, 10);
+      end = new Date(today.getFullYear(), 11, 31).toISOString().slice(0, 10);
+    } else if (preset === 'prev_year') {
+      start = new Date(today.getFullYear() - 1, 0, 1).toISOString().slice(0, 10);
+      end = new Date(today.getFullYear() - 1, 11, 31).toISOString().slice(0, 10);
+    }
+    return { start, end };
+  };
+
+  const applyPreset = (preset) => {
+    const dates = getPresetDates(preset);
+    setActivePreset(preset);
+    if (preset !== 'custom') {
+      setStartDate(dates.start);
+      setEndDate(dates.end);
+    }
+  };
+
+  const handleStartDateChange = (val) => {
+    setStartDate(val);
+    setActivePreset('custom');
+  };
+  const handleEndDateChange = (val) => {
+    setEndDate(val);
+    setActivePreset('custom');
+  };
+
+  // Calculate statistics within the chosen date range
   const rangeTransactions = transactions.filter(t => t.date >= startDate && t.date <= endDate);
 
   const rangeIncome = rangeTransactions
@@ -57,7 +130,7 @@ function Dashboard() {
         existing.value += parseFloat(t.amount);
       } else {
         const catObj = categories.find(c => c.name === t.category);
-        const color = catObj ? catObj.color : '#3b82f6';
+        const color = catObj ? catObj.color : '#7c3aed';
         acc.push({ name: t.category, value: parseFloat(t.amount), color });
       }
       return acc;
@@ -102,37 +175,54 @@ function Dashboard() {
   const isDark = theme === 'dark';
   const labelColor = isDark ? '#94a3b8' : '#475569';
   const gridColor = isDark ? '#334155' : '#e2e8f0';
-  const tooltipStyle = {
-    backgroundColor: isDark ? '#1e293b' : '#ffffff',
-    borderColor: isDark ? '#334155' : '#e2e8f0',
-    color: isDark ? '#f8fafc' : '#0f172a',
-    borderRadius: '8px'
-  };
 
   return (
     <div className="space-y-6 md:space-y-8 animate-fade-in pb-10">
       
-      {/* Title & Date Picker Row */}
-      <div className="border-b border-brand-border dark:border-dark-border pb-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      {/* Title & Unified Date Picker Row */}
+      <div className="border-b border-brand-border dark:border-dark-border pb-3 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <h1 className="text-xl md:text-2xl font-bold text-brand-text dark:text-white">
           Dashboard Summary
         </h1>
 
-        {/* Date Filter Input */}
-        <div className="flex items-center gap-2 bg-white dark:bg-dark-card border border-brand-border dark:border-dark-border rounded-lg px-3 py-1.5 shadow-xs">
-          <input 
-            type="date" 
-            value={startDate} 
-            onChange={(e) => setStartDate(e.target.value)}
-            className="text-xs focus:outline-none bg-transparent border-none py-0.5"
-          />
-          <span className="text-gray-300 dark:text-dark-border font-light">to</span>
-          <input 
-            type="date" 
-            value={endDate} 
-            onChange={(e) => setEndDate(e.target.value)}
-            className="text-xs focus:outline-none bg-transparent border-none py-0.5"
-          />
+        {/* Date Filter Input with Presets */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Presets */}
+          <div className="flex flex-wrap items-center gap-1">
+            {PRESETS.map((p) => (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() => applyPreset(p.value)}
+                className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition-all cursor-pointer ${
+                  activePreset === p.value 
+                    ? 'bg-primary text-white shadow-xs' 
+                    : 'bg-gray-100 hover:bg-gray-200 text-brand-text-gray dark:bg-dark-border dark:text-dark-text-gray dark:hover:bg-gray-800'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          
+          {/* Date picker inputs */}
+          <div className="flex items-center gap-2 bg-white dark:bg-dark-card border border-brand-border dark:border-dark-border rounded-lg px-2.5 py-1 shadow-xs">
+            <input 
+              type="date" 
+              value={startDate} 
+              onChange={(e) => handleStartDateChange(e.target.value)}
+              onClick={(e) => e.target.showPicker()}
+              className="text-[10px] font-bold focus:outline-none bg-transparent border-none py-0.5 cursor-pointer"
+            />
+            <span className="text-gray-300 dark:text-dark-border font-light text-[10px]">to</span>
+            <input 
+              type="date" 
+              value={endDate} 
+              onChange={(e) => handleEndDateChange(e.target.value)}
+              onClick={(e) => e.target.showPicker()}
+              className="text-[10px] font-bold focus:outline-none bg-transparent border-none py-0.5 cursor-pointer"
+            />
+          </div>
         </div>
       </div>
 
@@ -244,20 +334,46 @@ function Dashboard() {
           <div className="card-container space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Pie Chart */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-semibold text-center text-brand-text-gray dark:text-dark-text-gray">Expenses by Category</h4>
+              <div className="space-y-4">
+                <div className="border-b border-brand-border dark:border-dark-border pb-2 text-center">
+                  <h4 className="text-xs font-bold text-brand-text-gray dark:text-dark-text-gray">Expenses by Category</h4>
+                </div>
+
                 {pieData.length === 0 ? (
                   <div className="h-48 flex items-center justify-center text-xs text-gray-400">No expense records.</div>
                 ) : (
                   <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={60} labelLine={false} label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}>
+                        <Pie 
+                          data={pieData} 
+                          dataKey="value" 
+                          nameKey="name" 
+                          outerRadius={55} 
+                          labelLine={false} 
+                          label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) => {
+                            const RADIAN = Math.PI / 180;
+                            const radius = outerRadius * 1.25;
+                            const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                            const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                            return (
+                              <text
+                                x={x}
+                                y={y}
+                                textAnchor={x > cx ? 'start' : 'end'}
+                                dominantBaseline="central"
+                                className="text-[10px] font-semibold fill-brand-text-gray dark:fill-dark-text-gray"
+                              >
+                                {`${name} (${(percent * 100).toFixed(0)}%)`}
+                              </text>
+                            );
+                          }}
+                        >
                           {pieData.map((entry, index) => (
                             <Cell key={index} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Tooltip contentStyle={tooltipStyle} />
+                        <Tooltip content={<CustomTooltip />} />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
@@ -276,7 +392,7 @@ function Dashboard() {
                         <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                         <XAxis dataKey="month" tick={{ fill: labelColor, fontSize: 9 }} />
                         <YAxis tick={{ fill: labelColor, fontSize: 9 }} />
-                        <Tooltip contentStyle={tooltipStyle} />
+                        <Tooltip content={<CustomTooltip />} />
                         <Legend wrapperStyle={{ fontSize: 10 }} />
                         <Bar dataKey="income" fill="#10b981" name="Income" radius={[2, 2, 0, 0]} />
                         <Bar dataKey="expense" fill="#f43f5e" name="Expenses" radius={[2, 2, 0, 0]} />
@@ -305,7 +421,7 @@ function Dashboard() {
                 <div key={item.id} className="py-3 flex justify-between items-center text-xs">
                   <div className="space-y-0.5">
                     <div className="font-semibold text-brand-text dark:text-white flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: categories.find(c => c.name === item.category)?.color || '#3b82f6' }}></span>
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: categories.find(c => c.name === item.category)?.color || '#7c3aed' }}></span>
                       {item.category}
                     </div>
                     {item.description && (

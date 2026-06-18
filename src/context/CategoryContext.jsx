@@ -73,12 +73,17 @@ export function CategoriesProvider({ children }) {
   };
 
   // Updates the monthly budget limit, color, or type of a category
-  const updatecategorybudget = async (name, budget, color, type) => {
+  const updatecategorybudget = async (name, budget, color = null, type = null) => {
     try {
+      const payload = { name };
+      if (budget !== undefined && budget !== null) payload.budget = budget;
+      if (color) payload.color = color;
+      if (type) payload.type = type;
+
       const res = await fetch(`${API_BASE}/categories`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, budget, color, type }),
+        body: JSON.stringify(payload),
         credentials: "include"
       });
       const data = await res.json();

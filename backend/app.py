@@ -3,7 +3,7 @@ from flask_cors import CORS
 from decimal import Decimal
 import config
 from db import init_db, get_db_connection
-from helpers import hash_password, login_required, get_filtered_transactions_sql
+from helpers import hash_password, login_required, get_filtered_transactions_sql, process_recurring_transactions
 
 app = Flask(__name__)
 app.secret_key = config.SECRET_KEY
@@ -152,6 +152,10 @@ def get_transactions():
   Parameters: search, type, category, start_date, end_date, sort_by.
   """
   user_id = session['user_id']
+  
+  # Process recurring items before loading
+  process_recurring_transactions(user_id)
+
   search = request.args.get('search', '').strip()
   tx_type = request.args.get('type', 'all')
   category = request.args.get('category', 'all')
@@ -177,11 +181,18 @@ def add_transaction():
   description = data.get('description', '').strip()
   tx_type = data.get('type', 'expense')
   recurring = bool(data.get('recurring', False))
+  recurrence_interval = data.get('recurrence_interval', '').strip().lower() if data.get('recurrence_interval') else None
   tags = data.get('tags', '').strip() # comma-separated string
   
   if amount is None or not tx_date or not category:
     return jsonify({"error": "Amount, date, and category are required fields."}), 400
     
+  if recurring:
+    if recurrence_interval not in ['daily', 'weekly', 'monthly']:
+      recurrence_interval = 'monthly'
+  else:
+    recurrence_interval = None
+
   try:
     amount = float(amount)
     if amount <= 0:
@@ -194,8 +205,8 @@ def add_transaction():
     with conn.cursor() as cursor:
       # Write raw INSERT statement
       cursor.execute(
-          "INSERT INTO transactions (user_id, amount, date, category, description, type, recurring, tags) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
-          (user_id, amount, tx_date, category, description, tx_type, recurring, tags)
+          "INSERT INTO transactions (user_id, amount, date, category, description, type, recurring, recurrence_interval, tags) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+          (user_id, amount, tx_date, category, description, tx_type, recurring, recurrence_interval, tags)
       )
       tx_id = cursor.lastrowid
       
@@ -209,6 +220,7 @@ def add_transaction():
               "description": description,
               "type": tx_type,
               "recurring": recurring,
+              "recurrence_interval": recurrence_interval,
               "tags": tags
           }
       }), 201

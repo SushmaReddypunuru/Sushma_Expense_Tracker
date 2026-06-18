@@ -134,40 +134,7 @@ function TransactionHistory() {
     }
   };
 
-  // Export to CSV
-  const handleExportCSV = () => {
-    if (transactions.length === 0) {
-      return showNotification("No transactions to export.", "error");
-    }
 
-    const headers = ["ID", "Type", "Category", "Date", "Description", "Tags", "Amount", "Recurring"];
-    const rows = transactions.map(t => [
-      t.id,
-      t.type.toUpperCase(),
-      `"${t.category}"`,
-      t.date,
-      `"${t.description || ''}"`,
-      `"${t.tags || ''}"`,
-      t.amount,
-      t.recurring ? "YES" : "NO"
-    ]);
-
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `transactions_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showNotification("CSV ledger exported successfully!");
-  };
-
-  const handleExportPDF = () => {
-    window.print();
-  };
 
   return (
     <div className="space-y-6 md:space-y-8 animate-fade-in pb-10 print:p-0 print:bg-white print:text-black">
@@ -239,7 +206,8 @@ function TransactionHistory() {
               type="date" 
               value={startDate} 
               onChange={(e) => setStartDate(e.target.value)}
-              className="input-field text-xs"
+              onClick={(e) => e.target.showPicker()}
+              className="input-field text-xs cursor-pointer"
             />
           </div>
 
@@ -250,7 +218,8 @@ function TransactionHistory() {
               type="date" 
               value={endDate} 
               onChange={(e) => setEndDate(e.target.value)}
-              className="input-field text-xs"
+              onClick={(e) => e.target.showPicker()}
+              className="input-field text-xs cursor-pointer"
             />
           </div>
 
@@ -270,7 +239,7 @@ function TransactionHistory() {
           </div>
         </div>
 
-        {/* Clear Filters & Exports toolbar */}
+        {/* Clear Filters toolbar */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-3 border-t border-brand-border dark:border-dark-border text-xs">
           <div className="flex items-center gap-4">
             <span className="text-brand-text-gray dark:text-dark-text-gray font-medium">
@@ -291,22 +260,6 @@ function TransactionHistory() {
                 Reset
               </button>
             )}
-          </div>
-          
-          {/* Exports */}
-          <div className="flex gap-2">
-            <button 
-              onClick={handleExportCSV}
-              className="btn-secondary py-1 text-xs font-semibold"
-            >
-              Export to CSV
-            </button>
-            <button 
-              onClick={handleExportPDF}
-              className="btn-primary py-1 text-xs font-semibold"
-            >
-              Print PDF
-            </button>
           </div>
         </div>
       </div>
@@ -373,7 +326,8 @@ function TransactionHistory() {
                                 name="date" 
                                 value={editData.date} 
                                 onChange={handleEditChange} 
-                                className="w-full bg-white dark:bg-[#151d2a] border border-gray-300 dark:border-dark-border rounded-lg px-2 py-1 text-sm focus:outline-none"
+                                onClick={(e) => e.target.showPicker()}
+                                className="w-full bg-white dark:bg-[#151d2a] border border-gray-300 dark:border-dark-border rounded-lg px-2 py-1 text-sm focus:outline-none cursor-pointer"
                                 required
                               />
                             </div>
@@ -520,7 +474,8 @@ function TransactionHistory() {
                             name="date" 
                             value={editData.date} 
                             onChange={handleEditChange} 
-                            className="w-full bg-white dark:bg-[#151d2a] border border-gray-300 dark:border-dark-border rounded-lg px-2 py-1 text-sm focus:outline-none"
+                            onClick={(e) => e.target.showPicker()}
+                            className="w-full bg-white dark:bg-[#151d2a] border border-gray-300 dark:border-dark-border rounded-lg px-2 py-1 text-sm focus:outline-none cursor-pointer"
                             required
                           />
                         </div>

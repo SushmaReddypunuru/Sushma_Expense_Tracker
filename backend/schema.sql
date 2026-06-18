@@ -31,6 +31,9 @@ CREATE TABLE IF NOT EXISTS transactions (
     description VARCHAR(255) NULL,
     type VARCHAR(10) NOT NULL, -- 'income' or 'expense'
     recurring BOOLEAN NOT NULL DEFAULT FALSE,
+    recurrence_interval VARCHAR(20) NULL,
+    parent_recurring_id INT NULL,
     tags VARCHAR(255) NULL, -- Stored as comma-separated values (e.g. "office,lunch,travel")
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_recurring_id) REFERENCES transactions(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

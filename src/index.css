@@ -3,13 +3,13 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
+  --color-primary: #7c3aed; /* Soft violet/purple */
+  --color-primary-hover: #6d28d9;
   --color-brand-bg: #f8fafc;
   --color-brand-text: #0f172a;
   --color-brand-text-gray: #475569;
   --color-brand-card: #ffffff;
-  --color-brand-border: #e2e8f0;
+  --color-brand-border: #cbd5e1;
   
   /* Dark theme overrides */
   --color-dark-bg: #0f172a;
@@ -17,8 +17,12 @@
   --color-dark-text: #f8fafc;
   --color-dark-text-gray: #94a3b8;
   --color-dark-border: #334155;
-  --color-dark-primary: #3b82f6;
-  --color-dark-primary-hover: #2563eb;
+  --color-dark-primary: #a78bfa; /* Light violet/purple */
+  --color-dark-primary-hover: #8b5cf6;
+
+  /* Fonts */
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Outfit', sans-serif;
 }
 
 @layer base {
@@ -28,6 +32,10 @@
   
   html.dark body {
     @apply bg-dark-bg text-dark-text;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
   }
 
   /* Custom styled scrollbars */
@@ -67,9 +75,9 @@
 }
 
 .card-container {
-  @apply bg-brand-card dark:bg-dark-card border border-brand-border dark:border-dark-border rounded-xl p-6 shadow-xs transition-all duration-300;
+  @apply bg-brand-card dark:bg-dark-card border border-brand-border dark:border-dark-border rounded-xl p-6 shadow-xs hover:shadow-md hover:-translate-y-[2px] transition-all duration-300;
 }
 
 .input-field {
-  @apply w-full bg-white dark:bg-[#151d2a] border border-gray-300 dark:border-dark-border rounded-lg px-3 py-2 text-brand-text dark:text-dark-text text-sm transition-all focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:focus:border-dark-primary dark:focus:ring-dark-primary/20;
+  @apply w-full bg-white dark:bg-[#151d2a] border border-gray-300 dark:border-dark-border rounded-lg px-3 py-2 text-brand-text dark:text-white text-sm transition-all duration-200 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-xs focus:shadow-xs dark:focus:border-dark-primary dark:focus:ring-dark-primary/20;
 }
