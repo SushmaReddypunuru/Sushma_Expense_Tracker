@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local environment credentials
+.env
+
+# Python caching
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
